@@ -64,7 +64,7 @@ jobs:
       - name: Package macOS Apple Silicon
         if: matrix.platform == 'mac'
         working-directory: apps/desktop
-        run: npm run builder -- --native-deps "$RUNNER_TEMP/hermes-terminal-native-deps" --mac zip --arm64 --publish never -c.mac.identity=-
+        run: npm run builder -- --native-deps "$RUNNER_TEMP/hermes-terminal-native-deps" --mac zip --arm64 --publish never
       - name: Package Windows x64 portable archive
         if: matrix.platform == 'win'
         working-directory: apps/desktop
