@@ -31,6 +31,7 @@ import {
   closeTerminal,
   redrawAllTerminals,
   registerWebglRefresh,
+  type TerminalTarget,
   updateTerminalRestoreCwd,
   updateTerminalReviveBuffer
 } from './terminals'
@@ -242,6 +243,8 @@ interface UseTerminalSessionOptions {
   /** Only the active tab is visible, owns the agent reader, and runs injections. */
   active: boolean
   onAddSelectionToChat: (text: string, label?: string) => void
+  /** Optional explicit shell host; omitted follows the active Desktop connection. */
+  target?: TerminalTarget
   /** Last observed shell cwd from the previous session; the fresh PTY starts
    *  here (falling back to `cwd`) so a prior `cd` survives a relaunch. */
   restoreCwd?: string
@@ -389,6 +392,7 @@ export function useTerminalSession({
   cwd,
   active,
   onAddSelectionToChat,
+  target,
   restoreCwd,
   reviveBuffer,
   onShell
@@ -923,7 +927,7 @@ export function useTerminalSession({
         // Prefer the prior session's last cwd so a reopened tab lands where the
         // user last `cd`'d; the main side falls back to the launch cwd (then
         // home) if that dir no longer exists.
-        .start({ cols: term.cols, cwd: initialRestoreCwdRef.current || cwd, rows: term.rows })
+        .start({ cols: term.cols, cwd: initialRestoreCwdRef.current || cwd, rows: term.rows, target })
         .then(async session => {
           if (disposed) {
             void terminalApi.dispose(session.id)
@@ -1108,7 +1112,7 @@ export function useTerminalSession({
     // `id` is stable for the instance's life (keyed by tab id), so listing it
     // doesn't re-create the shell — it just satisfies the deps check for the
     // closeTerminal(id) call in onExit.
-  }, [addSelectionToChat, cwd, id, latestFontFamilyRef, mountedRef])
+  }, [addSelectionToChat, cwd, id, latestFontFamilyRef, mountedRef, target])
 
   useEffect(() => {
     const term = termRef.current

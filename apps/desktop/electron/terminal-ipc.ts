@@ -7,13 +7,14 @@ import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { app, ipcMain } from 'electron'
+import { app, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import nodePty from 'node-pty'
 
 import { resolveTerminalConnectionForSender } from './connection-apply'
 import { ensureSpawnHelperExecutable } from './spawn-helper-perms'
 import { buildInteractiveSshArgs } from './ssh-connection'
 import { createTerminalOutputGate } from './terminal-output-gate'
+import { interactiveSshArgs, type InteractiveTerminalTarget } from './terminal-target'
 import { applyWindowsMsysBashEnvDefaults } from './windows-msys-bash-env'
 import { buildWindowsInteractiveCommand } from './windows-remote-lifecycle'
 
@@ -303,7 +304,9 @@ export function registerTerminalIpc({
     }
   }
 
-  ipcMain.handle('hermes:terminal:start', async (event, payload = {}) => {
+  ipcMain.handle(
+    'hermes:terminal:start',
+    async (event: IpcMainInvokeEvent, payload: { cwd?: string; cols?: number; rows?: number; target?: InteractiveTerminalTarget } = {}) => {
     ensureNodePtySpawnHelper()
 
     const id = crypto.randomUUID()
@@ -312,23 +315,53 @@ export function registerTerminalIpc({
     const cols = Math.max(2, Number.parseInt(String(payload?.cols || 80), 10) || 80)
     const rows = Math.max(2, Number.parseInt(String(payload?.rows || 24), 10) || 24)
 
-    const sshTarget = await resolveTerminalConnectionForSender(event.sender.id, activeSshTerminalTarget, ensureBackend)
+    const target = payload?.target as InteractiveTerminalTarget | undefined
+    const explicitLocal = target?.kind === 'local'
+    const explicitRemote = target?.kind === 'ssh' || target?.kind === 'docker'
 
-    const remote = Boolean(sshTarget)
-    const remoteState = remote ? getSshConnectionState(sshTarget.scope) : null
+    const sshTarget = explicitRemote
+      ? null
+      : explicitLocal
+        ? null
+        : await resolveTerminalConnectionForSender(event.sender.id, activeSshTerminalTarget, ensureBackend)
+
+    const remote = Boolean(sshTarget) || explicitRemote
+    const remoteState = sshTarget ? getSshConnectionState(sshTarget.scope) : null
 
     const remoteCommand =
       remoteState?.remotePlatform === 'Windows'
         ? buildWindowsInteractiveCommand(String(payload?.cwd || '').trim())
         : undefined
 
-    const ptyProcess = remote
-      ? nodePty.spawn(
-          sshBinary(),
-          buildInteractiveSshArgs(sshTarget.ssh, String(payload?.cwd || '').trim(), undefined, remoteCommand),
-          { cols, cwd: app.getPath('home'), env: terminalShellEnv(), name: 'xterm-256color', rows }
-        )
-      : nodePty.spawn(command, args, { cols, cwd, env: terminalShellEnv(), name: 'xterm-256color', rows })
+    const ptyProcess = explicitRemote
+      ? nodePty.spawn(sshBinary(), interactiveSshArgs(target), {
+          cols,
+          cwd: app.getPath('home'),
+          env: terminalShellEnv(),
+          name: 'xterm-256color',
+          rows
+        })
+      : explicitLocal && target.shell && target.shell !== 'default'
+        ? (() => {
+            if (!isWindows) {throw new Error('Command Prompt and PowerShell terminal targets require Windows')}
+
+            const command = target.shell === 'cmd'
+              ? process.env.COMSPEC || 'cmd.exe'
+              : findOnPath('pwsh.exe') || findOnPath('pwsh') || windowsPowerShellPath()
+
+            if (!command) {throw new Error('PowerShell was not found on PATH or in the Windows system directory')}
+
+            return nodePty.spawn(command, shellSpecFor(command).args, {
+              cols, cwd, env: terminalShellEnv(), name: shellSpecFor(command).name, rows
+            })
+          })()
+        : sshTarget
+          ? nodePty.spawn(
+            sshBinary(),
+            buildInteractiveSshArgs(sshTarget.ssh, String(payload?.cwd || '').trim(), undefined, remoteCommand),
+            { cols, cwd: app.getPath('home'), env: terminalShellEnv(), name: 'xterm-256color', rows }
+          )
+        : nodePty.spawn(command, args, { cols, cwd, env: terminalShellEnv(), name: 'xterm-256color', rows })
 
     const send = (suffix, payload) => {
       if (event.sender.isDestroyed()) {
@@ -348,7 +381,7 @@ export function registerTerminalIpc({
       outputGate,
       pty: ptyProcess,
       webContentsId: event.sender.id,
-      ...(remote ? { sshScope: sshTarget.scope, remoteCwd: String(payload?.cwd || '') } : {})
+      ...(sshTarget ? { sshScope: sshTarget.scope, remoteCwd: String(payload?.cwd || '') } : explicitRemote ? { remoteCwd: '' } : {})
     })
 
     ptyProcess.onData(data => outputGate.data(data))

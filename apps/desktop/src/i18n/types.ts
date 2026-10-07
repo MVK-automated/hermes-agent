@@ -3933,6 +3933,13 @@ export interface Translations extends NoticeTranslations {
     terminalHide: string
     terminalsAria: string
     terminalNew: string
+    terminalNewLocal: string
+    terminalNewSsh: string
+    terminalNewDocker: string
+    terminalTargetTitle: string
+    terminalTargetHost: string
+    terminalTargetContainer: string
+    terminalTargetOpen: string
     terminalReadOnly: string
     terminalReadOnlyHelp: string
     terminalOpenInteractive: string

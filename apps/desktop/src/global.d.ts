@@ -561,7 +561,7 @@ declare global {
         onData: (id: string, callback: (payload: string) => void) => () => void
         onExit: (id: string, callback: (payload: HermesTerminalExit) => void) => () => void
         resize: (id: string, size: { cols: number; rows: number }) => Promise<boolean>
-        start: (options?: { cols?: number; cwd?: string; rows?: number }) => Promise<HermesTerminalSession>
+        start: (options?: { cols?: number; cwd?: string; rows?: number; target?: HermesTerminalTarget }) => Promise<HermesTerminalSession>
         write: (id: string, data: string) => Promise<boolean>
       }
       reachPreviewUrl?: (url: string) => Promise<string>
@@ -711,6 +711,11 @@ export interface DesktopMarketplaceThemeResult {
   displayName: string
   themes: DesktopMarketplaceThemeFile[]
 }
+
+export type HermesTerminalTarget =
+  | { kind: 'local'; shell?: 'default' | 'cmd' | 'powershell' }
+  | { kind: 'ssh'; host: string }
+  | { kind: 'docker'; host: string; container: string }
 
 export interface HermesTerminalSession {
   cwd: string

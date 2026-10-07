@@ -4523,6 +4523,13 @@ export const en: Translations = {
     terminalHide: 'Hide terminal',
     terminalsAria: 'Terminals',
     terminalNew: 'New terminal',
+    terminalNewLocal: 'New local terminal',
+    terminalNewSsh: 'SSH to Pi',
+    terminalNewDocker: 'Docker container on Pi',
+    terminalTargetTitle: 'Remote terminal target',
+    terminalTargetHost: 'SSH host or alias',
+    terminalTargetContainer: 'Docker container name',
+    terminalTargetOpen: 'Open terminal',
     terminalCloseOthers: 'Close others',
     terminalCloseAll: 'Close all',
     addToChat: 'Add to chat'

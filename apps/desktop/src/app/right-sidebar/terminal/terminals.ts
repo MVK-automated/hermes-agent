@@ -104,8 +104,18 @@ if (typeof window !== 'undefined') {
   })
 }
 
+export type TerminalTarget =
+  | { kind: 'local'; shell?: 'default' | 'cmd' | 'powershell' }
+  | { kind: 'ssh'; host: string }
+  | { kind: 'docker'; host: string; container: string }
+
 /** One in-app terminal tab. `id` is the renderer-side handle (distinct from the
  *  PTY session id the main process mints); each instance owns its own shell. */
+export interface TerminalTargetConfig {
+  host: string
+  container: string
+}
+
 export interface TerminalEntry {
   id: string
   /** Display label. `auto` adopts the resolved shell name until the user renames. */
@@ -126,6 +136,8 @@ export interface TerminalEntry {
    *  revived — a fresh shell starts beneath the restored buffer. Captured live
    *  for user tabs only; agent mirrors stay runtime-only. */
   reviveBuffer?: string
+  /** SSH/container destination for this tab. Omitted preserves the active-connection default. */
+  target?: TerminalTarget
   /** `user` = interactive PTY shell. `agent` = read-only mirror of an agent
    *  background process (`terminal(background=true)`), keyed by `procId`. */
   kind: 'user' | 'agent'
@@ -164,6 +176,32 @@ function sanitizePersistedTerminal(value: unknown): PersistedTerminalEntry | nul
   const cwd = typeof record.cwd === 'string' ? record.cwd : ''
   const restoreCwd = typeof record.restoreCwd === 'string' && record.restoreCwd ? record.restoreCwd : undefined
   const reviveBuffer = typeof record.reviveBuffer === 'string' ? record.reviveBuffer : undefined
+  const rawTarget = record.target
+
+  const target: TerminalTarget | undefined =
+    rawTarget && typeof rawTarget === 'object' && !Array.isArray(rawTarget)
+      ? (() => {
+          const value = rawTarget as Record<string, unknown>
+
+          if (value.kind === 'local') {
+            const shell = value.shell === 'cmd' || value.shell === 'powershell' ? value.shell : 'default'
+
+            return { kind: 'local', shell }
+          }
+
+          if (value.kind === 'ssh' && typeof value.host === 'string') {return { kind: 'ssh', host: value.host }}
+
+          if (
+            value.kind === 'docker' &&
+            typeof value.host === 'string' &&
+            typeof value.container === 'string'
+          ) {
+            return { kind: 'docker', host: value.host, container: value.container }
+          }
+
+          return undefined
+        })()
+      : undefined
 
   if (!id) {
     return null
@@ -175,6 +213,7 @@ function sanitizePersistedTerminal(value: unknown): PersistedTerminalEntry | nul
     id,
     ...(restoreCwd ? { restoreCwd } : {}),
     ...(reviveBuffer ? { reviveBuffer } : {}),
+    ...(target ? { target } : {}),
     title: title || 'Terminal'
   }
 }
@@ -223,6 +262,7 @@ function persistTerminals(list: readonly TerminalEntry[], activeTerminalId: null
       id: term.id,
       ...(term.restoreCwd ? { restoreCwd: term.restoreCwd } : {}),
       ...(term.reviveBuffer ? { reviveBuffer: term.reviveBuffer } : {}),
+      ...(term.target ? { target: term.target } : {}),
       title: term.title
     }))
 
@@ -256,9 +296,9 @@ const newId = () =>
 
 /** Append a fresh terminal and focus it. Captures the current cwd once (its only
  *  tie to session/project state); pass an explicit cwd to override. Returns the id. */
-export function createTerminal(cwd: string = $currentCwd.get()): string {
+export function createTerminal(cwd: string = $currentCwd.get(), target?: TerminalTarget): string {
   const id = newId()
-  $terminals.set([...$terminals.get(), { id, title: 'Terminal', auto: true, cwd, kind: 'user' }])
+  $terminals.set([...$terminals.get(), { id, title: 'Terminal', auto: true, cwd, kind: 'user', ...(target ? { target } : {}) }])
   $activeTerminalId.set(id)
 
   return id

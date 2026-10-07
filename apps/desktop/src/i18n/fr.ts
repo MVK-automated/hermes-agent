@@ -4980,6 +4980,13 @@ export const frOverrides = {
     terminalHide: 'Masquer le terminal',
     terminalsAria: 'Terminaux',
     terminalNew: 'Nouveau terminal',
+    terminalNewLocal: 'Nouveau terminal local',
+    terminalNewSsh: 'Connexion SSH au Pi',
+    terminalNewDocker: 'Conteneur Docker sur le Pi',
+    terminalTargetTitle: 'Cible du terminal distant',
+    terminalTargetHost: 'Hôte ou alias SSH',
+    terminalTargetContainer: 'Nom du conteneur Docker',
+    terminalTargetOpen: 'Ouvrir le terminal',
     terminalCloseOthers: 'Fermer les autres',
     terminalCloseAll: 'Tout fermer',
     addToChat: 'Ajouter à la conversation'

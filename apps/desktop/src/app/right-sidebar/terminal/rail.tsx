@@ -1,4 +1,5 @@
 import { useStore } from '@nanostores/react'
+import { useState } from 'react'
 
 import { Codicon } from '@/components/ui/codicon'
 import {
@@ -8,15 +9,23 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger
 } from '@/components/ui/context-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { Tip, TipHintLabel } from '@/components/ui/tooltip'
 import { useI18n } from '@/i18n'
 import { formatCombo } from '@/lib/keybinds/combo'
 import { isMetaClose, middleClickHandlers } from '@/lib/middle-click'
+import { isWindowsPlatform } from '@/lib/platform'
 import { cn } from '@/lib/utils'
 import { $bindings } from '@/store/keybinds'
 
 import { setTerminalTakeover } from '../store'
 
+import { TerminalTargetDialog } from './target-dialog'
 import {
   $activeTerminalId,
   $terminals,
@@ -41,6 +50,7 @@ export function TerminalRail() {
   const bindings = useStore($bindings)
   const toggleHint = bindings['view.showTerminal']?.[0]
   const newHint = bindings['view.newTerminal']?.[0]
+  const [targetKind, setTargetKind] = useState<'ssh' | 'docker' | null>(null)
 
   return (
     <div
@@ -67,22 +77,36 @@ export function TerminalRail() {
           />
         ))}
         <li className="flex w-full justify-center">
-          <Tip
-            label={<TipHintLabel hint={newHint && formatCombo(newHint)} text={t.rightSidebar.terminalNew} />}
-            placement="right-rail"
-          >
-            <button
-              aria-label={t.rightSidebar.terminalNew}
-              className={cn(RAIL_ACTION, 'size-7 text-(--ui-text-quaternary)')}
-              onClick={() => createTerminal()}
-              type="button"
+          <DropdownMenu>
+            <Tip
+              label={<TipHintLabel hint={newHint && formatCombo(newHint)} text={t.rightSidebar.terminalNew} />}
+              placement="right-rail"
             >
-              <Codicon name="add" size="0.8125rem" />
-            </button>
-          </Tip>
+              <DropdownMenuTrigger asChild>
+                <button
+                  aria-label={t.rightSidebar.terminalNew}
+                  className={cn(RAIL_ACTION, 'size-7 text-(--ui-text-quaternary)')}
+                  type="button"
+                >
+                  <Codicon name="add" size="0.8125rem" />
+                </button>
+              </DropdownMenuTrigger>
+            </Tip>
+            <DropdownMenuContent align="start" side="right">
+              <DropdownMenuItem onSelect={() => createTerminal()}>{t.rightSidebar.terminalNew}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => createTerminal('', { kind: 'local', shell: 'default' })}>{t.rightSidebar.terminalNewLocal}</DropdownMenuItem>
+              {isWindowsPlatform() && <>
+                <DropdownMenuItem onSelect={() => createTerminal('', { kind: 'local', shell: 'cmd' })}>Command Prompt</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => createTerminal('', { kind: 'local', shell: 'powershell' })}>PowerShell</DropdownMenuItem>
+              </>}
+              <DropdownMenuItem onSelect={() => setTargetKind('ssh')}>{t.rightSidebar.terminalNewSsh}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setTargetKind('docker')}>{t.rightSidebar.terminalNewDocker}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </li>
       </ul>
 
+      {targetKind && <TerminalTargetDialog kind={targetKind} onClose={() => setTargetKind(null)} />}
       <div className="flex shrink-0 flex-col items-center pb-1.5">
         <Tip label={t.rightSidebar.terminalHide} placement="right-rail">
           <button

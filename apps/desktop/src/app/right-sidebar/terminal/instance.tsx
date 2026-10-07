@@ -6,7 +6,7 @@ import { Loader } from '@/components/ui/loader'
 import { useI18n } from '@/i18n'
 import { cn } from '@/lib/utils'
 
-import { createTerminal, reportTerminalShell } from './terminals'
+import { createTerminal, reportTerminalShell, type TerminalTarget } from './terminals'
 import { useAgentTerminal } from './use-agent-terminal'
 import { useTerminalSession } from './use-terminal-session'
 
@@ -27,6 +27,7 @@ interface TerminalInstanceProps {
   onAddSelectionToChat: (text: string, label?: string) => void
   restoreCwd?: string
   reviveBuffer?: string
+  target?: TerminalTarget
 }
 
 /** One persistent xterm+PTY. Every open tab stays mounted (so its shell and
@@ -37,7 +38,8 @@ export function TerminalInstance({
   cwd,
   onAddSelectionToChat,
   restoreCwd,
-  reviveBuffer
+  reviveBuffer,
+  target
 }: TerminalInstanceProps) {
   const { t } = useI18n()
 
@@ -46,6 +48,7 @@ export function TerminalInstance({
     cwd,
     active,
     onAddSelectionToChat,
+    target,
     restoreCwd,
     reviveBuffer,
     onShell: shell => reportTerminalShell(id, shell)

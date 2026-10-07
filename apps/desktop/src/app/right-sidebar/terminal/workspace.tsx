@@ -58,6 +58,7 @@ export function TerminalWorkspace({ onAddSelectionToChat }: TerminalWorkspacePro
             onAddSelectionToChat={onAddSelectionToChat}
             restoreCwd={term.restoreCwd}
             reviveBuffer={term.reviveBuffer}
+            target={term.target}
           />
         )
       )}
