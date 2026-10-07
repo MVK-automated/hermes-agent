@@ -53,6 +53,8 @@ describe('explicit terminal target IPC', () => {
   it.runIf(process.platform === 'win32')('reports the explicitly selected Command Prompt rather than default PowerShell', async () => {
     const { start } = setup(true)
     const session = await start({ kind: 'local', shell: 'cmd' })
+    const expectedCommand = process.env.COMSPEC || 'cmd.exe'
+    expect(spawn).toHaveBeenCalledWith(expectedCommand, [], expect.any(Object))
     expect(session.shell).toBe('cmd.exe')
   })
 })

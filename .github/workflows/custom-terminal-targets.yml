@@ -53,14 +53,22 @@ jobs:
         run: npx vitest run electron/terminal-target.test.ts electron/terminal-target-ipc.test.ts electron/terminal-ipc.test.ts electron/terminal-pty-dispose.test.ts electron/terminal-output-gate.test.ts src/app/right-sidebar/terminal/rail-target.test.tsx src/app/right-sidebar/terminal/terminals.test.ts
       - name: Build desktop
         run: npm run build --workspace apps/desktop
+      - name: Prepare native dependencies for target runner
+        working-directory: apps/desktop
+        run: |
+          if [[ "${{ matrix.platform }}" == "mac" ]]; then
+            node scripts/stage-native-deps.mjs --source "$GITHUB_WORKSPACE" --out "$RUNNER_TEMP/hermes-terminal-native-deps" --platform darwin --arch arm64
+          else
+            node scripts/stage-native-deps.mjs --source "$GITHUB_WORKSPACE" --out "$RUNNER_TEMP/hermes-terminal-native-deps" --platform win32 --arch x64
+          fi
       - name: Package macOS Apple Silicon
         if: matrix.platform == 'mac'
         working-directory: apps/desktop
-        run: npm run builder -- --mac zip --arm64 --publish never -c.mac.identity=-
+        run: npm run builder -- --native-deps "$RUNNER_TEMP/hermes-terminal-native-deps" --mac zip --arm64 --publish never -c.mac.identity=-
       - name: Package Windows x64 portable archive
         if: matrix.platform == 'win'
         working-directory: apps/desktop
-        run: npm run builder -- --win zip --x64 --publish never
+        run: npm run builder -- --native-deps "$RUNNER_TEMP/hermes-terminal-native-deps" --win zip --x64 --publish never
       - name: Upload custom build
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:

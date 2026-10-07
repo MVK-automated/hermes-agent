@@ -310,14 +310,32 @@ export function registerTerminalIpc({
     ensureNodePtySpawnHelper()
 
     const id = crypto.randomUUID()
-    const { args, command, name } = terminalShellCommand()
-    const cwd = safeTerminalCwd(payload?.cwd)
-    const cols = Math.max(2, Number.parseInt(String(payload?.cols || 80), 10) || 80)
-    const rows = Math.max(2, Number.parseInt(String(payload?.rows || 24), 10) || 24)
-
     const target = payload?.target as InteractiveTerminalTarget | undefined
     const explicitLocal = target?.kind === 'local'
     const explicitRemote = target?.kind === 'ssh' || target?.kind === 'docker'
+
+    const explicitShell = explicitLocal && target.shell && target.shell !== 'default'
+      ? (() => {
+          if (!isWindows) {
+            throw new Error('Command Prompt and PowerShell terminal targets require Windows')
+          }
+
+          const shellPath = target.shell === 'cmd'
+            ? process.env.COMSPEC || 'cmd.exe'
+            : findOnPath('pwsh.exe') || findOnPath('pwsh') || windowsPowerShellPath()
+
+          if (!shellPath) {
+            throw new Error('PowerShell was not found on PATH or in the Windows system directory')
+          }
+
+          return shellSpecFor(shellPath)
+        })()
+      : null
+
+    const { args, command, name } = explicitShell || terminalShellCommand()
+    const cwd = safeTerminalCwd(payload?.cwd)
+    const cols = Math.max(2, Number.parseInt(String(payload?.cols || 80), 10) || 80)
+    const rows = Math.max(2, Number.parseInt(String(payload?.rows || 24), 10) || 24)
 
     const sshTarget = explicitRemote
       ? null
@@ -341,21 +359,7 @@ export function registerTerminalIpc({
           name: 'xterm-256color',
           rows
         })
-      : explicitLocal && target.shell && target.shell !== 'default'
-        ? (() => {
-            if (!isWindows) {throw new Error('Command Prompt and PowerShell terminal targets require Windows')}
-
-            const command = target.shell === 'cmd'
-              ? process.env.COMSPEC || 'cmd.exe'
-              : findOnPath('pwsh.exe') || findOnPath('pwsh') || windowsPowerShellPath()
-
-            if (!command) {throw new Error('PowerShell was not found on PATH or in the Windows system directory')}
-
-            return nodePty.spawn(command, shellSpecFor(command).args, {
-              cols, cwd, env: terminalShellEnv(), name: shellSpecFor(command).name, rows
-            })
-          })()
-        : sshTarget
+      : sshTarget
           ? nodePty.spawn(
             sshBinary(),
             buildInteractiveSshArgs(sshTarget.ssh, String(payload?.cwd || '').trim(), undefined, remoteCommand),
