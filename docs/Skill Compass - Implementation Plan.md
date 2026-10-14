@@ -63,9 +63,9 @@ Wire actual SDK exports and plugin APIs; test failed-send recovery and session/p
 ## Current execution prerequisites
 
 - Dedicated integration worktree created from fork origin/main at 503a6b60. Existing dirty checkout preserved.
-- Codex CLI installed in task scratch tooling, but `codex login status` reports Not logged in.
-- Existing Claude Code CLI reports loggedIn=false.
-- delegate_task is not available in this conversation's exposed tool catalog.
+- Codex CLI is not the user's configured runtime. Hermes-managed OpenAI OAuth is independent of official Codex CLI login; no Codex sign-in is required for this workflow.
+- Claude Code works inside this Pi gateway container when launched with `HOME=/opt/data /opt/data/.local/bin/claude`. The terminal default HOME is /opt/data/home, which produced a false logged-out diagnosis. Correct-home auth status reports loggedIn=true, authMethod=claude.ai; an actual tool-free print-mode request returned READY with exit 0. Do not copy or display credential files.
+- delegate_task is not exposed in this conversation, but independent Claude Code processes can provide implementer/reviewer roles in isolated worktrees. The worker-runtime blocker is resolved.
 - macOS VM SSH probe timed out. Do not change its network/security settings.
 
-These block the requested subagent-based implementation and native acceptance, not issue/spec preparation. Do not copy Hermes-managed OAuth credentials to another CLI or bypass credential isolation. Resolve through supported delegation availability or an operator-authenticated worker CLI; request the VM be brought online for native validation.
+GitHub Issues permission still blocks creation of the selected task tracker; native VM access blocks final macOS acceptance. Neither missing delegate_task nor missing official Codex CLI login is itself a blocker now that Claude Code is verified.

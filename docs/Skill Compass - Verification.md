@@ -16,9 +16,9 @@ Status: blocked in execution prerequisites. No production code, issues, subagent
 |---|---|---|
 | GitHub Issues in new plugin repo | GraphQL and REST list both return HTTP 403 Resource not accessible by personal access token | Operator grants the configured GitHub token Issues read/write for MVK-automated/hermes-skill-compass; keep token out of chat |
 | Issues in existing fork | Disabled; enabling rejected with HTTP 403 | Not necessary if central plugin tracker is usable |
-| Hermes delegation | delegate_task not exposed in available tool catalog | Enable supported delegation in the session/tool configuration, or use an authenticated independent worker CLI |
-| Codex CLI | Installed task-locally at pinned 0.162.1; login status Not logged in | Operator-supported CLI login if choosing this runtime; do not copy Hermes OAuth credentials |
-| Existing Claude Code CLI | auth status loggedIn=false | Operator-supported CLI login if choosing this runtime |
+| Hermes delegation | delegate_task not exposed; independent Claude Code workers are usable instead | Not a blocker |
+| Codex CLI | Official Codex login is separate from Hermes OpenAI OAuth and is not the selected worker runtime | Not required; do not copy Hermes OAuth credentials |
+| Existing Claude Code CLI | RESOLVED: correct HOME=/opt/data reports loggedIn=true/authMethod=claude.ai; real print-mode request returned READY, exit 0 | Launch /opt/data/.local/bin/claude with HOME=/opt/data; prior logged-out result used the wrong terminal HOME=/opt/data/home |
 | Isolated macOS acceptance | SSH connection timeout to configured VM | Bring VM/host online; do not bypass host-key verification or alter network policy |
 
 No tests have run because implementation has not begun. No macOS binary or model benchmark exists. Setup commits do not satisfy any implementation acceptance criterion.
