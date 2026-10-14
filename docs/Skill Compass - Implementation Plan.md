@@ -4,6 +4,8 @@
 
 The user invoked implement-spec and chose GitHub Issues. Treat the architecture as the requested implementation scope. Track acceptance, not merely source completion. Keep all issues open until their acceptance checks pass.
 
+Intended tracker: all tickets centrally in MVK-automated/hermes-skill-compass, with code-repository pointers. No GitHub Issues have been created: both GraphQL and REST reads returned HTTP 403 (Resource not accessible by personal access token). Repository access reports admin/push permissions, but the token lacks usable Issues permission. The existing fork also has Issues disabled; enabling them returned HTTP 403, so its settings remain unchanged. The dependency graph below is prepared, not dispatched.
+
 Repositories:
 - SDK: https://github.com/MVK-automated/hermes-agent (existing fork; upstream remains read-only).
 - Plugins: https://github.com/MVK-automated/hermes-skill-compass (private).
